@@ -1,4 +1,6 @@
 import { useEffect, useState, useContext } from "react";
+import { Link } from "react-router-dom";
+import { FiArrowLeft } from "react-icons/fi";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
@@ -102,6 +104,12 @@ const Events = () => {
       <div className="pointer-events-none absolute top-0 left-0 w-full h-[40rem] bg-lens-glow opacity-50" />
 
       <div className="relative max-w-screen-xl mx-auto px-6 md:px-8 py-20">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink transition-colors mb-8"
+        >
+          <FiArrowLeft /> Back to Home
+        </Link>
         <SectionHeading kicker="The Full Archive" title="All Events" />
 
         {/* Year Filter */}

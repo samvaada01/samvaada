@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,6 +10,7 @@ import {
   FiChevronRight,
   FiDownload,
   FiCalendar,
+  FiShare2,
 } from "react-icons/fi";
 import { db } from "../../Firebase/firebase.config";
 import {
@@ -18,9 +19,11 @@ import {
   slugifyEventName,
 } from "../../../utils/drive";
 import SectionHeading from "../../shared/SectionHeading";
+import { AuthContext } from "../../AuthProvider/AuthProvider";
 
 const Gallery = () => {
   const { id } = useParams();
+  const { user } = useContext(AuthContext);
   const [event, setEvent] = useState(null);
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +38,31 @@ const Gallery = () => {
         year: "numeric",
       })
     : null;
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Link copied to clipboard!");
+    } catch (err) {
+      console.error("Failed to copy", err);
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: event?.eventName || "Event Gallery",
+          text: `Check out ${event?.eventName || "this event"}`,
+          url: shareUrl,
+        });
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error("Error sharing", error);
+        }
+      }
+    }
+  };
 
   const handleDownload = useCallback(
     async (index, e) => {
@@ -105,12 +133,23 @@ const Gallery = () => {
   return (
     <div className="min-h-screen bg-ground text-ink">
       <section className="max-w-screen-xl mx-auto pt-24 pb-16 px-6 md:px-8">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink transition-colors mb-8"
-        >
-          <FiArrowLeft /> Back to events
-        </Link>
+        <div className="flex items-center justify-between mb-8">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink transition-colors"
+          >
+            <FiArrowLeft /> Back to events
+          </Link>
+          {user && (
+            <button
+              onClick={handleShare}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-dim hover:text-ink transition-colors"
+              aria-label="Share event"
+            >
+              <FiShare2 /> Share
+            </button>
+          )}
+        </div>
 
         <SectionHeading
           kicker="Captured Moments"

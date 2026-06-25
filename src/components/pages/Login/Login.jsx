@@ -72,7 +72,6 @@ const Login = () => {
           <span>Sign in with Google</span>
         </button>
       </div>
-      <ToastContainer theme="dark" />
     </div>
   );
 };
