@@ -8,6 +8,7 @@ import AddEvent from "../components/pages/Admin/AddEvent";
 import UpdateEvent from "../components/pages/Admin/UpdateEvent";
 import Events from "../components/pages/events/events";
 import Gallery from "../components/pages/Gallery/Gallery";
+import Community from "../components/pages/Community/Community";
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,10 @@ const router = createBrowserRouter([
       {
         path: "/login",
         element: <Login />,
+      },
+      {
+        path: "/community",
+        element: <Community />,
       },
       {
         path: "/events",
