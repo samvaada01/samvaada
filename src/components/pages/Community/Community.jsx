@@ -113,12 +113,12 @@ export default function Community() {
               <span>Join WhatsApp Group</span>
             </a>
             
-            <button 
+            {/* <button 
               onClick={() => setHasJoined(false)}
               className="mt-6 text-sm text-ink-faint hover:text-ink-dim transition-colors"
             >
               ← Back
-            </button>
+            </button> */}
           </motion.div>
         )}
       </motion.div>
