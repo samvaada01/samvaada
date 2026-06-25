@@ -1,4 +1,6 @@
 import { Outlet } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import NavBar from "../components/shared/NavBar/NavBar";
 import Footer from "../components/shared/NavBar/Footer";
 import ScrollToTop from "../components/shared/NavBar/ScrollToTop";
@@ -22,6 +24,7 @@ const Root = () => {
         <Outlet />
       </div>
       <Footer />
+      <ToastContainer theme="dark" />
     </div>
   );
 };

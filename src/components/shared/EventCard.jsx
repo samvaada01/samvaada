@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { BiDotsVerticalRounded } from "react-icons/bi";
-import { FiArrowUpRight, FiLock, FiCalendar } from "react-icons/fi";
+import { FiArrowUpRight, FiLock, FiCalendar, FiShare2 } from "react-icons/fi";
 
 /**
  * A single event presented as a clean photo card.
@@ -23,6 +23,33 @@ const EventCard = ({ event, user, isAdmin = false, onDelete }) => {
         year: "numeric",
       })
     : "—";
+
+  const handleShare = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}/events/${event.id}/gallery`;
+    
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Link copied to clipboard!");
+    } catch (err) {
+      console.error("Failed to copy", err);
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: event.eventName,
+          text: `Check out ${event.eventName}`,
+          url: shareUrl,
+        });
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error("Error sharing", error);
+        }
+      }
+    }
+  };
 
   return (
     <article className="group relative flex flex-col h-full bg-ground-card border border-white/[0.07] rounded-xl overflow-hidden transition-all duration-400 hover:border-brand-glow/30 hover:-translate-y-1 hover:bg-ground-card/80">
@@ -76,7 +103,7 @@ const EventCard = ({ event, user, isAdmin = false, onDelete }) => {
         </p>
 
         {/* action */}
-        <div className="mt-6 pt-5 border-t border-white/[0.06]">
+        <div className="mt-6 pt-5 border-t border-white/[0.06] flex items-center justify-between">
           {user ? (
             <Link
               to={`/events/${event.id}/gallery`}
@@ -93,6 +120,16 @@ const EventCard = ({ event, user, isAdmin = false, onDelete }) => {
             >
               <FiLock className="text-sm" /> Login to view
             </Link>
+          )}
+
+          {user && (
+            <button
+              onClick={handleShare}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-faint hover:text-ink transition-colors"
+              aria-label="Share event"
+            >
+              <FiShare2 className="text-sm" /> Share
+            </button>
           )}
         </div>
       </div>
