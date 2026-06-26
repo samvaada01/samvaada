@@ -21,13 +21,24 @@ const whatsappLinks = {
 
 
 export default function Community() {
-  const [hasJoined, setHasJoined] = useState(false);
-  const [branch, setBranch] = useState("");
-  const [name, setName] = useState("");
+  const [hasJoined, setHasJoined] = useState(() => {
+    return localStorage.getItem("communityJoined") === "true";
+  });
+  const [branch, setBranch] = useState(() => {
+    return localStorage.getItem("communityBranch") || "";
+  });
+  const [name, setName] = useState(() => {
+    return localStorage.getItem("communityName") || "";
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (name.trim() === "" || branch === "") return;
+
+    localStorage.setItem("communityJoined", "true");
+    localStorage.setItem("communityBranch", branch);
+    localStorage.setItem("communityName", name);
+
     setHasJoined(true);
   };
 
