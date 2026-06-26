@@ -52,20 +52,22 @@ const Banner = () => {
         animate="show"
         className="relative z-30 flex flex-col items-center text-center"
       >
-        <motion.img
-          variants={rise}
-          src={logo}
-          alt="Samvaada Logo"
-          className="w-28 sm:w-36 md:w-44 lg:w-52 drop-shadow-[0_10px_40px_rgba(134,174,203,0.2)]"
-          draggable="false"
-        />
-        <motion.img
-          variants={rise}
-          src={logo_text}
-          alt="Samvaada"
-          className="w-56 sm:w-72 md:w-[26rem] lg:w-[32rem] mt-1"
-          draggable="false"
-        />
+        <h1 className="contents">
+          <motion.img
+            variants={rise}
+            src={logo}
+            alt="Samvaada Logo"
+            className="w-28 sm:w-36 md:w-44 lg:w-52 drop-shadow-[0_10px_40px_rgba(134,174,203,0.2)]"
+            draggable="false"
+          />
+          <motion.img
+            variants={rise}
+            src={logo_text}
+            alt="Samvaada"
+            className="w-56 sm:w-72 md:w-[26rem] lg:w-[32rem] mt-1"
+            draggable="false"
+          />
+        </h1>
         <motion.p
           variants={rise}
           className="mt-6 text-base sm:text-lg text-ink-dim font-light text-balance max-w-xs sm:max-w-lg"
@@ -75,7 +77,7 @@ const Banner = () => {
         </motion.p>
 
         <motion.div variants={rise} className="mt-9">
-          <button onClick={handleScrollToEvents} className="btn-cine">
+          <button onClick={handleScrollToEvents} className="btn-cine" aria-label="View Events">
             View Events
           </button>
         </motion.div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaWhatsapp, FaArrowRight } from 'react-icons/fa';
+import useSEO from '../../../utils/useSEO';
 
 const whatsappLinks = {
 "Artificial Intelligence & Data Science":"https://chat.whatsapp.com/ErZ9D8zxJVD6xfPogz3OHK",
@@ -21,6 +22,13 @@ const whatsappLinks = {
 
 
 export default function Community() {
+  useSEO({
+    title: "Join Community | Samvaada NMAMIT",
+    description:
+      "Join your NMAMIT branch WhatsApp community through Samvaada. Stay connected with peers and never miss any college updates.",
+    canonical: "https://samvaada-nmamit.in/community",
+  });
+
   const [hasJoined, setHasJoined] = useState(() => {
     return localStorage.getItem("communityJoined") === "true";
   });

@@ -5,8 +5,16 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FcGoogle } from "react-icons/fc";
 import { IoArrowBack } from "react-icons/io5";
+import useSEO from "../../../utils/useSEO";
 
 const Login = () => {
+  useSEO({
+    title: "Sign In | Samvaada NMAMIT",
+    description:
+      "Sign in to Samvaada with your NMAMIT college account to access event galleries, photos, and the student community.",
+    canonical: "https://samvaada-nmamit.in/login",
+  });
+
   const { googleLogin } = useContext(AuthContext);
   const location = useLocation();
   const navigate = useNavigate();

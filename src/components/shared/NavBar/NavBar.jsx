@@ -79,7 +79,7 @@ const NavBar = () => {
 
         <div className="max-w-screen-xl mx-auto flex items-center h-full px-4 md:px-6">
           {/* Brand */}
-          <Link to="/" className="flex items-center shrink-0">
+          <Link to="/" className="flex items-center shrink-0" aria-label="Home">
             <img
               className="h-8 object-contain"
               src={logo}
@@ -88,7 +88,7 @@ const NavBar = () => {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex flex-1 justify-end items-center gap-8">
+          <nav role="navigation" aria-label="Main navigation" className="hidden md:flex flex-1 justify-end items-center gap-8">
             <div className="flex items-center gap-8">
               {navItems.map((item) => (
                 <button
@@ -159,6 +159,8 @@ const NavBar = () => {
             <button
               onClick={() => setMobileOpen((s) => !s)}
               aria-label="Toggle menu"
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-menu"
               className="p-2 rounded-md text-ink-dim hover:text-ink focus:outline-none"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -174,7 +176,7 @@ const NavBar = () => {
 
         {/* Mobile menu panel */}
         {mobileOpen && (
-          <div className="md:hidden bg-ground/95 backdrop-blur-xl border-t border-white/10">
+          <div id="mobile-menu" className="md:hidden bg-ground/95 backdrop-blur-xl border-t border-white/10">
             <div className="max-w-screen-xl mx-auto px-4 py-4 flex flex-col space-y-1">
               {navItems.map((item) => (
                 <button

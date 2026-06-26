@@ -18,7 +18,7 @@ const links = [
 
 const Footer = () => {
   return (
-    <footer className="relative bg-ground-soft text-ink-dim border-t border-white/[0.07] overflow-hidden">
+    <footer role="contentinfo" className="relative bg-ground-soft text-ink-dim border-t border-white/[0.07] overflow-hidden">
       {/* lens-glow accent line + ambient glow */}
       <div className="absolute top-0 left-0 h-px w-full bg-gradient-to-r from-transparent via-brand-glow/40 to-transparent" />
       <div className="pointer-events-none absolute -top-24 right-[-6rem] w-[36rem] h-[36rem] bg-lens-glow opacity-40" />
@@ -68,7 +68,7 @@ const Footer = () => {
           </div>
 
           {/* Explore */}
-          <nav className="lg:col-span-3 text-left">
+          <nav aria-label="Explore links" className="lg:col-span-3 text-left">
             <h4 className="cam-label !text-[0.62rem] text-brand-glow/90 mb-5">Explore</h4>
             <ul className="space-y-3">
               {links.map((l) => (
@@ -86,7 +86,7 @@ const Footer = () => {
           </nav>
 
           {/* Follow */}
-          <div className="lg:col-span-4 text-left">
+          <nav aria-label="Social media links" className="lg:col-span-4 text-left">
             <h4 className="cam-label !text-[0.62rem] text-brand-glow/90 mb-5">Follow Us</h4>
             <ul className="space-y-3">
               {socials.map((s, i) => (
@@ -105,7 +105,7 @@ const Footer = () => {
                 </li>
               ))}
             </ul>
-          </div>
+          </nav>
         </div>
 
         {/* Bottom bar */}
