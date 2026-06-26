@@ -9,15 +9,47 @@ import AboutFea from "./AboutFea/AboutFea";
 import Banner from "./Banner/Banner";
 import MeetTheTeam from "./MeetTheTeam";
 import SectionHeading from "../../shared/SectionHeading";
+import useStructuredData from "../../../utils/useStructuredData";
 import EventCard from "../../shared/EventCard";
+import useSEO from "../../../utils/useSEO";
 
 const Home = () => {
+  useSEO({
+    title: "Samvaada | NMAMIT Event Archive & Community",
+    description:
+      "Samvaada is the official event archive and student community platform of NMAMIT, Nitte. Browse events, view photo galleries, and join your branch community.",
+    canonical: "https://samvaada-nmamit.in/",
+  });
+
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedYear, setSelectedYear] = useState(null);
   const [academicYears, setAcademicYears] = useState([]);
   const { user } = useContext(AuthContext);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useStructuredData([
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Samvaada - NMAMIT",
+      "url": "https://samvaada-nmamit.in",
+      "logo": "https://samvaada-nmamit.in/src/assets/video/title.png",
+      "description": "The official event archive and student community platform of NMAM Institute of Technology, Nitte.",
+      "sameAs": [],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "student community",
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Samvaada",
+      "url": "https://samvaada-nmamit.in",
+      "description": "NMAMIT Event Archive & Student Community Platform",
+    },
+  ]);
 
   // ✅ Detect screen size (to limit events count)
   useEffect(() => {
@@ -98,14 +130,14 @@ const Home = () => {
   const displayedEvents = filteredEvents.slice(0, isMobile ? 3 : 6);
 
   return (
-    <div className="bg-ground text-ink">
+    <main role="main" className="bg-ground text-ink">
       {/* HOME / HERO */}
       <section id="home">
         <Banner />
       </section>
 
       {/* EVENTS */}
-      <section id="events" className="relative max-w-screen-xl mx-auto pt-20 pb-12 px-6 md:px-8">
+      <section id="events" aria-label="College events" className="relative max-w-screen-xl mx-auto pt-20 pb-12 px-6 md:px-8">
         <SectionHeading kicker="Captured Moments" title="Events" />
 
         {/* Year filter */}
@@ -163,15 +195,15 @@ const Home = () => {
       </section>
 
       {/* ABOUT */}
-      <section id="about" className="mt-12">
+      <section id="about" aria-label="About Samvaada" className="mt-12">
         <AboutFea />
       </section>
 
       {/* GALLERY */}
-      <section id="gallery" className="mt-12 px-4 md:px-8 pb-10">
+      <section id="gallery" aria-label="Meet the team" className="mt-12 px-4 md:px-8 pb-10">
         <MeetTheTeam />
       </section>
-    </div>
+    </main>
   );
 };
 

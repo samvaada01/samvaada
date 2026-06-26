@@ -20,16 +20,48 @@ import {
 } from "../../../utils/drive";
 import SectionHeading from "../../shared/SectionHeading";
 import { AuthContext } from "../../AuthProvider/AuthProvider";
+import useStructuredData from "../../../utils/useStructuredData";
+import useSEO from "../../../utils/useSEO";
 
 const Gallery = () => {
   const { id } = useParams();
   const { user } = useContext(AuthContext);
   const [event, setEvent] = useState(null);
+
+  useSEO({
+    title: `${event?.eventName || "Gallery"} | Samvaada NMAMIT`,
+    description: `Browse photos from ${event?.eventName || "this event"} at NMAMIT. View and download event gallery pictures from Samvaada.`,
+    canonical: `https://samvaada-nmamit.in/events/${id}/gallery`,
+  });
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [active, setActive] = useState(null); // index of open image
   const [downloading, setDownloading] = useState(null); // index being downloaded
+
+  useStructuredData(
+    event
+      ? {
+          "@context": "https://schema.org",
+          "@type": "Event",
+          "name": event.eventName,
+          "description": event.eventDescription || "",
+          "startDate": event.eventDate,
+          "location": {
+            "@type": "Place",
+            "name": "NMAM Institute of Technology",
+            "address": "Nitte, Karnataka, India",
+          },
+          "organizer": {
+            "@type": "Organization",
+            "name": "Samvaada - NMAMIT",
+            "url": "https://samvaada-nmamit.in",
+          },
+          "image": "https://samvaada-nmamit.in/src/assets/video/title.png",
+          "url": `https://samvaada-nmamit.in/events/${event.id}/gallery`,
+        }
+      : null
+  );
 
   const dateLabel = event?.eventDate
     ? new Date(event.eventDate).toLocaleDateString("en-GB", {

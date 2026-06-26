@@ -8,8 +8,16 @@ import { db } from "../../Firebase/firebase.config";
 import { AuthContext } from "../../AuthProvider/AuthProvider";
 import SectionHeading from "../../shared/SectionHeading";
 import EventCard from "../../shared/EventCard";
+import useSEO from "../../../utils/useSEO";
 
 const Events = () => {
+  useSEO({
+    title: "All Events | Samvaada NMAMIT",
+    description:
+      "Browse the complete archive of NMAMIT events organized by academic year. View event details, photos, and memories from Samvaada.",
+    canonical: "https://samvaada-nmamit.in/events",
+  });
+
   const { user } = useContext(AuthContext);
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
@@ -99,7 +107,7 @@ const Events = () => {
   };
 
   return (
-    <div className="relative bg-ground text-ink min-h-screen">
+    <main role="main" aria-label="Events archive" className="relative bg-ground text-ink min-h-screen">
       {/* ambient glow */}
       <div className="pointer-events-none absolute top-0 left-0 w-full h-[40rem] bg-lens-glow opacity-50" />
 
@@ -131,9 +139,10 @@ const Events = () => {
 
         {/* Events Grid */}
         {filteredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div role="list" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((event, i) => (
               <motion.div
+                role="listitem"
                 key={event.id}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -156,7 +165,7 @@ const Events = () => {
           </p>
         )}
       </div>
-    </div>
+    </main>
   );
 };
 
