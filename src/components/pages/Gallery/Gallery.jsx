@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useContext } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
@@ -25,6 +25,7 @@ import useSEO from "../../../utils/useSEO";
 
 const Gallery = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const [event, setEvent] = useState(null);
 
@@ -166,12 +167,18 @@ const Gallery = () => {
     <div className="min-h-screen bg-ground text-ink">
       <section className="max-w-screen-xl mx-auto pt-24 pb-16 px-6 md:px-8">
         <div className="flex items-center justify-between mb-8">
-          <Link
-            to="/"
+          <button
+            onClick={() => {
+              if (window.history.length > 2) {
+                navigate(-1);
+              } else {
+                navigate("/events");
+              }
+            }}
             className="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink transition-colors"
           >
             <FiArrowLeft /> Back to events
-          </Link>
+          </button>
           {user && (
             <button
               onClick={handleShare}

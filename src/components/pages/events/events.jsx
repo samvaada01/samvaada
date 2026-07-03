@@ -1,5 +1,5 @@
 import { useEffect, useState, useContext } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { FiArrowLeft } from "react-icons/fi";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { motion } from "framer-motion";
@@ -19,6 +19,7 @@ const Events = () => {
   });
 
   const { user } = useContext(AuthContext);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
@@ -48,13 +49,14 @@ const Events = () => {
       const sortedYears = Array.from(years).sort().reverse();
       setAcademicYears(sortedYears);
 
-      // Default to most recent academic year
-      const mostRecentYear = sortedYears[0] || null;
-      setSelectedYear(mostRecentYear);
+      const yearParam = searchParams.get("year");
+      // Default to most recent academic year or URL year
+      const defaultYear = (yearParam && sortedYears.includes(yearParam)) ? yearParam : (sortedYears[0] || null);
+      setSelectedYear(defaultYear);
 
       // Filter events for the default year
-      if (mostRecentYear) {
-        filterEventsByYear(mostRecentYear, eventsList);
+      if (defaultYear) {
+        filterEventsByYear(defaultYear, eventsList, false);
       }
 
       setEvents(eventsList);
@@ -65,7 +67,7 @@ const Events = () => {
   }, []);
 
   // 🧩 Filter events by academic year
-  const filterEventsByYear = (academicYear, eventList = events) => {
+  const filterEventsByYear = (academicYear, eventList = events, updateUrl = true) => {
     if (!academicYear) {
       setFilteredEvents([]);
       return;
@@ -86,6 +88,10 @@ const Events = () => {
 
     setFilteredEvents(sortedFiltered);
     setSelectedYear(academicYear);
+    
+    if (updateUrl) {
+      setSearchParams({ year: academicYear }, { replace: true });
+    }
   };
 
   // 🗑️ Delete an event (admin only)
