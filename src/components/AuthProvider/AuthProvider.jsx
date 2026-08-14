@@ -1,9 +1,7 @@
 import {
   GoogleAuthProvider,
-  createUserWithEmailAndPassword,
   getAuth,
   onAuthStateChanged,
-  signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
 } from "firebase/auth";
@@ -28,29 +26,25 @@ const AuthProvider = ({ children }) => {
 
   const allowedDomains = ["@nmamit.in", "@nitte.edu.in"];
 
-  const createUser = (email, password) => {
-    setLoading(true);
-    return createUserWithEmailAndPassword(auth, email, password);
-  };
-
-  const signIn = (email, password) => {
-    setLoading(true);
-    return signInWithEmailAndPassword(auth, email, password);
-  };
-
   // hd = hosted-domain hint, so the account picker prefilters to students or
   // faculty. It's only a hint — the allowedDomains check below still decides.
   const googleLogin = (hd) => {
     setLoading(true);
     googleProvider.setCustomParameters(hd ? { hd } : {});
-    return signInWithPopup(auth, googleProvider).then((result) => {
-      const email = result.user.email;
-      if (!allowedDomains.some((domain) => email.endsWith(domain))) {
-        logOut();
-        throw new Error("Please login using your college email");
-      }
-      return result;
-    });
+    return signInWithPopup(auth, googleProvider)
+      .then(async (result) => {
+        const email = (result.user.email || "").toLowerCase();
+        if (!allowedDomains.some((domain) => email.endsWith(domain))) {
+          // must await: the popup already persisted a valid token
+          await signOut(auth);
+          throw new Error("Please login using your college email");
+        }
+        return result;
+      })
+      .catch(async (err) => {
+        setLoading(false); // a cancelled popup must not leave the app spinning
+        throw err;
+      });
   };
 
   const logOut = () => {
@@ -67,14 +61,12 @@ const AuthProvider = ({ children }) => {
     return () => {
       unSubscribe();
     };
-  });
+  }, []);
 
   const authInfo = {
     db,
     user,
-    createUser,
     googleLogin,
-    signIn,
     logOut,
     loading,
   };

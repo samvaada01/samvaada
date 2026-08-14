@@ -19,7 +19,6 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <Home />,
-        loader: () => fetch("/events-data.json"),
       },
       {
         path: "/login",
@@ -48,7 +47,7 @@ const router = createBrowserRouter([
       {
         path: "/admin/add-event",
         element: (
-          <PrivateRoute>
+          <PrivateRoute admin>
             <AddEvent />
           </PrivateRoute>
         ),
@@ -56,7 +55,7 @@ const router = createBrowserRouter([
       {
         path: "/admin/update-event/:id",
         element: (
-          <PrivateRoute>
+          <PrivateRoute admin>
             <UpdateEvent />
           </PrivateRoute>
         ),

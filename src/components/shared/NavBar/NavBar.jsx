@@ -1,11 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../../AuthProvider/AuthProvider";
-import Loading from "../../Loading/Loading";
 import logo from "../../../assets/video/logo.png";
+import isAdminEmail from "../../../utils/isAdmin";
 
 const NavBar = () => {
-  const { logOut, user, loading } = useContext(AuthContext);
+  const { logOut, user } = useContext(AuthContext);
   const [imgError, setImgError] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -67,9 +67,6 @@ const NavBar = () => {
 
   return (
     <>
-      {/* Show loading overlay if loading */}
-      {loading && <Loading />}
-
       {/* Spacer keeps page content below the fixed bar — prevents overlap at any zoom */}
       <div className="h-[var(--nav-h)]" aria-hidden="true" />
 
@@ -106,7 +103,7 @@ const NavBar = () => {
             <div className="flex items-center gap-3 pl-2 border-l border-white/10">
               {user ? (
                 <>
-                  {user.email === import.meta.env.VITE_ADMIN_EMAIL && (
+                  {isAdminEmail(user.email) && (
                     <Link to="/admin/add-event" className="btn-cine">
                       + Add Event
                     </Link>
@@ -191,7 +188,7 @@ const NavBar = () => {
               <div className="pt-3 mt-2 border-t border-white/10">
                 {user ? (
                   <>
-                    {user.email === import.meta.env.VITE_ADMIN_EMAIL && (
+                    {isAdminEmail(user.email) && (
                       <Link
                         to="/admin/add-event"
                         className="btn-cine w-full justify-center mb-2"

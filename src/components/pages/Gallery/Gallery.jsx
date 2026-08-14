@@ -65,7 +65,7 @@ const Gallery = () => {
             "name": "Samvaada - NMAMIT",
             "url": "https://samvaada-nmamit.in",
           },
-          "image": "https://samvaada-nmamit.in/src/assets/video/title.png",
+          "image": "https://samvaada-nmamit.in/og-image.png",
           "url": `https://samvaada-nmamit.in/events/${event.id}/gallery`,
         }
       : null
@@ -284,14 +284,16 @@ const Gallery = () => {
         {!loading && error && (
           <div className="mt-12 text-center">
             <p className="text-red-400/90">{error}</p>
+            {event?.eventDriveLink && (
             <a
-              href={event?.eventDriveLink}
+              href={event.eventDriveLink}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block mt-4 text-sm font-semibold text-brand-glow hover:text-white transition-colors"
             >
               Open in Google Drive instead →
             </a>
+            )}
           </div>
         )}
 

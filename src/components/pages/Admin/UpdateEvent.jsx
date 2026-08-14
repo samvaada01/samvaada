@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../Firebase/firebase.config";
 import { AuthContext } from "../../AuthProvider/AuthProvider";
 import { toast } from "react-toastify";
+import isAdminEmail from "../../../utils/isAdmin";
 
 const UpdateEvent = () => {
   const { id } = useParams();
@@ -17,16 +18,23 @@ const UpdateEvent = () => {
     eventFor: "",
   });
 
+  const [loaded, setLoaded] = useState(false);
+
   useEffect(() => {
     const fetchEvent = async () => {
-      const docRef = doc(db, "events", id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setEventData(docSnap.data());
+      try {
+        const docSnap = await getDoc(doc(db, "events", id));
+        if (!docSnap.exists()) throw new Error("Event not found.");
+        setEventData((prev) => ({ ...prev, ...docSnap.data() }));
+        setLoaded(true);
+      } catch (err) {
+        // rendering the blank form here would let a submit overwrite the doc
+        toast.error(err.message || "Couldn't load this event.");
+        navigate("/events");
       }
     };
     fetchEvent();
-  }, [id]);
+  }, [id, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,7 +43,7 @@ const UpdateEvent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (user?.email !== import.meta.env.VITE_ADMIN_EMAIL) {
+    if (!isAdminEmail(user?.email)) {
       toast.error("Unauthorized access");
       return;
     }
@@ -48,6 +56,14 @@ const UpdateEvent = () => {
       toast.error("Error updating event");
     }
   };
+
+  if (!loaded) {
+    return (
+      <div className="container mx-auto px-4 py-24 text-center text-ink-dim">
+        Loading event…
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-24">

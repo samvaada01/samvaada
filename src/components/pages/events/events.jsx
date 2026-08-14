@@ -9,6 +9,7 @@ import { AuthContext } from "../../AuthProvider/AuthProvider";
 import SectionHeading from "../../shared/SectionHeading";
 import EventCard from "../../shared/EventCard";
 import useSEO from "../../../utils/useSEO";
+import isAdminEmail from "../../../utils/isAdmin";
 
 const Events = () => {
   useSEO({
@@ -25,7 +26,7 @@ const Events = () => {
   const [academicYears, setAcademicYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState(null);
 
-  const isAdmin = user?.email === import.meta.env.VITE_ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user?.email);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -39,6 +40,9 @@ const Events = () => {
       const years = new Set();
       eventsList.forEach((event) => {
         const date = new Date(event.eventDate);
+        // one undefined/garbage date otherwise yields "NaN-NaN", which sorts
+        // first and becomes the default filter — hiding every real event
+        if (Number.isNaN(date.getTime())) return;
         const month = date.getMonth();
         const year = date.getFullYear();
         const academicYear =
