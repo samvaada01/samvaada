@@ -43,9 +43,70 @@
 
       gtag("config", "G-NKRS0RNVJL");
     </script>
+    <style>
+      /* Painted straight from the HTML, so the page is never a blank white
+         rectangle while the bundles download. Deliberately a pixel match for
+         <Loading /> (the spinning aperture) so when React mounts and takes
+         over, the handoff is invisible — same mark, same label, same colours. */
+      html,
+      body {
+        margin: 0;
+        background: #06090c;
+        color: #c4d4e1;
+      }
+      .boot {
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        background: #06090c;
+      }
+      .boot svg {
+        width: 64px;
+        height: 64px;
+        animation: boot-aperture 3s linear infinite;
+      }
+      .boot span {
+        font-family: "Manrope", system-ui, sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #89a3b6;
+      }
+      @keyframes boot-aperture {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .boot svg {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot">
+        <svg viewBox="0 0 100 100" fill="none" stroke-width="2" stroke-linecap="round">
+          <circle cx="50" cy="50" r="46" stroke="#243E51" />
+          <g stroke="#86AECB">
+            <line x1="68.00" y1="50.00" x2="73.77" y2="87.02" />
+            <line x1="59.00" y1="65.59" x2="29.82" y2="89.10" />
+            <line x1="41.00" y1="65.59" x2="6.05" y2="52.08" />
+            <line x1="32.00" y1="50.00" x2="26.23" y2="12.98" />
+            <line x1="41.00" y1="34.41" x2="70.18" y2="10.90" />
+            <line x1="59.00" y1="34.41" x2="93.95" y2="47.92" />
+          </g>
+        </svg>
+        <span>Focusing&hellip;</span>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

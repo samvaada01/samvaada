@@ -24,7 +24,14 @@ const Root = () => {
         <Outlet />
       </div>
       <Footer />
-      <ToastContainer theme="dark" />
+      <ToastContainer
+        theme="dark"
+        position="bottom-right"
+        autoClose={3500}
+        newestOnTop
+        limit={3}
+        pauseOnFocusLoss={false}
+      />
     </div>
   );
 };
