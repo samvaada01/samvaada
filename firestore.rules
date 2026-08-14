@@ -5,12 +5,15 @@ rules_version = '2';
 // Keeping these in the repo (rather than only in the console) means they get
 // reviewed and can be rolled back. Change the address below if the admin changes
 // — it must match VITE_ADMIN_EMAIL.
+//
+// IMPORTANT: the catch-all at the bottom denies every path not listed here. If
+// your console rules already grant access to a collection this file doesn't
+// mention, add it before deploying or that collection stops working.
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
       return request.auth != null
-          && request.auth.token.email_verified == true
           && request.auth.token.email.lower() == 'samvaada@nmamit.in';
     }
 
