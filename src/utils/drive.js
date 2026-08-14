@@ -72,40 +72,24 @@ export function slugifyEventName(name = "") {
   );
 }
 
-/**
- * List image files inside a public Drive folder.
- * @param {string} folderUrl - the stored eventDriveLink
- * @returns {Promise<Array<{id,name,thumb,full}>>}
- */
-export async function fetchDriveImages(folderUrl) {
-  const folderId = parseDriveFolderId(folderUrl);
-  const apiKey = import.meta.env.VITE_DRIVE_APIKEY;
+const FOLDER_MIME = "application/vnd.google-apps.folder";
 
-  if (!folderId) {
-    throw new Error("Couldn't read a Google Drive folder ID from this link.");
-  }
-  if (!apiKey) {
-    throw new Error("Drive API key is missing (set VITE_DRIVE_APIKEY).");
-  }
+/** One page-following Drive files.list call. */
+async function driveList(params) {
+  const apiKey = import.meta.env.VITE_DRIVE_APIKEY;
+  if (!apiKey) throw new Error("Drive API key is missing (set VITE_DRIVE_APIKEY).");
 
   const files = [];
   let pageToken = "";
 
   do {
-    const params = new URLSearchParams({
-      q: `'${folderId}' in parents and mimeType contains 'image/' and trashed = false`,
-      fields: "nextPageToken, files(id, name)",
-      orderBy: "name",
-      pageSize: "100",
-      key: apiKey,
-    });
-    if (pageToken) params.set("pageToken", pageToken);
+    const search = new URLSearchParams({ ...params, key: apiKey, pageSize: "100" });
+    if (pageToken) search.set("pageToken", pageToken);
 
-    const res = await fetch(`${DRIVE_FILES_ENDPOINT}?${params.toString()}`);
+    const res = await fetch(`${DRIVE_FILES_ENDPOINT}?${search.toString()}`);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      const msg = body?.error?.message || `Drive request failed (${res.status})`;
-      throw new Error(msg);
+      throw new Error(body?.error?.message || `Drive request failed (${res.status})`);
     }
 
     const data = await res.json();
@@ -113,5 +97,39 @@ export async function fetchDriveImages(folderUrl) {
     pageToken = data.nextPageToken || "";
   } while (pageToken);
 
-  return files.map((f) => ({ id: f.id, name: f.name, ...driveImageUrls(f.id) }));
+  return files;
+}
+
+/**
+ * List the subfolders and images directly inside a public Drive folder.
+ * @param {string} folderUrlOrId - a Drive link or a bare folder ID
+ * @returns {Promise<{folders: Array<{id,name}>, images: Array<{id,name,thumb,full}>}>}
+ */
+export async function fetchDriveFolder(folderUrlOrId) {
+  const folderId = parseDriveFolderId(folderUrlOrId);
+  if (!folderId) {
+    throw new Error("Couldn't read a Google Drive folder ID from this link.");
+  }
+
+  const files = await driveList({
+    q: `'${folderId}' in parents and trashed = false and (mimeType contains 'image/' or mimeType = '${FOLDER_MIME}')`,
+    fields: "nextPageToken, files(id, name, mimeType)",
+    orderBy: "folder,name",
+  });
+
+  return {
+    folders: files.filter((f) => f.mimeType === FOLDER_MIME).map((f) => ({ id: f.id, name: f.name })),
+    images: files
+      .filter((f) => f.mimeType !== FOLDER_MIME)
+      .map((f) => ({ id: f.id, name: f.name, ...driveImageUrls(f.id) })),
+  };
+}
+
+/** Folder display name — used for the breadcrumb on a deep-linked subfolder. */
+export async function fetchDriveFolderName(folderId) {
+  const apiKey = import.meta.env.VITE_DRIVE_APIKEY;
+  const res = await fetch(`${DRIVE_FILES_ENDPOINT}/${folderId}?fields=name&key=${apiKey}`);
+  if (!res.ok) return "";
+  const data = await res.json().catch(() => ({}));
+  return data.name || "";
 }

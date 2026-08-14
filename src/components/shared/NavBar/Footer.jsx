@@ -114,7 +114,7 @@ const Footer = () => {
           <p className="text-xs text-ink-faint">
             Crafted with ♥ by{" "}
             <a
-              href="https://instagram.com/uniq_myth"
+              href="http://mithunmallya.in/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-ink-dim hover:text-ink underline underline-offset-2"
