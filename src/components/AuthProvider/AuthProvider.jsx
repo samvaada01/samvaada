@@ -38,8 +38,11 @@ const AuthProvider = ({ children }) => {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const googleLogin = () => {
+  // hd = hosted-domain hint, so the account picker prefilters to students or
+  // faculty. It's only a hint — the allowedDomains check below still decides.
+  const googleLogin = (hd) => {
     setLoading(true);
+    googleProvider.setCustomParameters(hd ? { hd } : {});
     return signInWithPopup(auth, googleProvider).then((result) => {
       const email = result.user.email;
       if (!allowedDomains.some((domain) => email.endsWith(domain))) {

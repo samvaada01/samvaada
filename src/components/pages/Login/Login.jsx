@@ -22,8 +22,8 @@ const Login = () => {
   const notifyGoogle = (e) => toast.success(e);
   const notifyGoogleError = (e) => toast.error(e);
 
-  const handleGoogleLogin = () => {
-    googleLogin()
+  const handleGoogleLogin = (hd) => {
+    googleLogin(hd)
       .then((res) => {
         notifyGoogle(res.user.displayName);
         navigate(location?.state ? location.state : "/");
@@ -55,25 +55,28 @@ const Login = () => {
         </p>
 
         <div className="mb-8 space-y-3">
-          <div className="border border-white/[0.07] bg-white/[0.02] p-4 rounded-sm">
-            <p className="text-ink font-semibold text-sm">Are you a student?</p>
-            <p className="text-ink-dim text-sm mt-1">
-              Login with the account ending in{" "}
-              <span className="font-mono text-brand-glow">@nmamit.in</span>
-            </p>
-          </div>
-          <div className="border border-white/[0.07] bg-white/[0.02] p-4 rounded-sm">
-            <p className="text-ink font-semibold text-sm">Are you a Faculty member?</p>
-            <p className="text-ink-dim text-sm mt-1">
-              Login with the account ending in{" "}
-              <span className="font-mono text-brand-glow">@nitte.edu.in</span>
-            </p>
-          </div>
+          {[
+            { label: "Are you a student?", domain: "nmamit.in" },
+            { label: "Are you a Faculty member?", domain: "nitte.edu.in" },
+          ].map(({ label, domain }) => (
+            <button
+              key={domain}
+              type="button"
+              onClick={() => handleGoogleLogin(domain)}
+              className="w-full text-left border border-white/[0.07] bg-white/[0.02] p-4 rounded-sm transition hover:border-brand-glow/40 hover:bg-white/[0.05] focus:outline-none focus:ring-2 focus:ring-brand-glow/60"
+            >
+              <p className="text-ink font-semibold text-sm">{label}</p>
+              <p className="text-ink-dim text-sm mt-1">
+                Login with the account ending in{" "}
+                <span className="font-mono text-brand-glow">@{domain}</span>
+              </p>
+            </button>
+          ))}
         </div>
 
         <button
           type="button"
-          onClick={handleGoogleLogin}
+          onClick={() => handleGoogleLogin()}
           className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 font-semibold rounded-sm py-3 transition"
         >
           <FcGoogle className="text-2xl" />
