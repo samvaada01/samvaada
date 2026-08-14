@@ -140,4 +140,32 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /* ---- Hero darkroom dust (replaces the WebGL sparkle canvas) ---- */
+  .dust-mote {
+    position: absolute;
+    border-radius: 9999px;
+    background: #86aecb;
+    box-shadow: 0 0 4px 1px rgb(134 174 203 / 0.35);
+    will-change: transform;
+    animation-name: dust-drift;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+  }
+
+  @keyframes dust-drift {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(var(--dx, 0), var(--dy, 0), 0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dust-mote {
+      animation: none;
+    }
+  }
 }
