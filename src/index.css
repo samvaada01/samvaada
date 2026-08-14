@@ -204,6 +204,19 @@
   line-height: 1.45;
 }
 
+/* clear the fixed navbar instead of sitting under it */
+.Toastify .Toastify__toast-container--top-right {
+  top: calc(var(--nav-h) + 0.75rem);
+}
+
+/* toastify goes full-bleed under 480px, where its own rule resets top to 0 */
+@media (max-width: 480px) {
+  .Toastify .Toastify__toast-container--top-right {
+    top: var(--nav-h);
+    padding: 0 0.5rem;
+  }
+}
+
 /* the default bar is a solid slab; a hairline reads as part of the card */
 .Toastify .Toastify__progress-bar {
   height: 2px;

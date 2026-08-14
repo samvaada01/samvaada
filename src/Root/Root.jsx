@@ -26,7 +26,7 @@ const Root = () => {
       <Footer />
       <ToastContainer
         theme="dark"
-        position="bottom-right"
+        position="top-right"
         autoClose={3500}
         newestOnTop
         limit={3}
