@@ -107,6 +107,9 @@ const EventCard = ({ event, user, isAdmin = false, onDelete }) => {
           {user && event.eventDriveLink ? (
             <Link
               to={`/events/${event.id}/gallery`}
+              // hand the already-loaded event over so Gallery can start the
+              // Drive listing without re-reading the Firestore doc first
+              state={event}
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-glow hover:text-white transition-colors"
             >
               View Photos

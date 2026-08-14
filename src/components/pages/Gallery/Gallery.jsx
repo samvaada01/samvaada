@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useContext, useRef } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
@@ -32,7 +32,14 @@ const Gallery = () => {
   const { user } = useContext(AuthContext);
   const [searchParams, setSearchParams] = useSearchParams();
   const folderId = searchParams.get("folder"); // null = event's root Drive folder
-  const [event, setEvent] = useState(null);
+
+  // EventCard passes the event through router state, which removes a Firestore
+  // round trip from the front of the waterfall. PrivateRoute also uses state
+  // (for the post-login path, a string), so check the shape before trusting it.
+  const { state } = useLocation();
+  const handedOver =
+    state && typeof state === "object" && state.id === id ? state : null;
+  const [event, setEvent] = useState(handedOver);
 
   useSEO({
     title: `${event?.eventName || "Gallery"} | Samvaada NMAMIT`,
@@ -123,8 +130,9 @@ const Gallery = () => {
     [images, event]
   );
 
-  // 1. the event document
+  // 1. the event document — only when it wasn't handed to us (deep link, refresh)
   useEffect(() => {
+    if (handedOver) return;
     let cancelled = false;
     (async () => {
       try {
@@ -142,7 +150,7 @@ const Gallery = () => {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, handedOver]);
 
   // 2. the Drive listing for whichever folder we're in
   useEffect(() => {
@@ -178,6 +186,30 @@ const Gallery = () => {
       cancelled = true;
     };
   }, [event, folderId]);
+
+  // Prefetch the next/previous full image so arrows and swipes feel instant.
+  // Gated on the current image finishing: firing these immediately would put
+  // two ~170KB fetches in front of the photo the user is actually waiting for,
+  // and fast swiping would queue fetches for images already skipped past.
+  const [currentLoaded, setCurrentLoaded] = useState(false);
+
+  useEffect(() => {
+    setCurrentLoaded(false);
+  }, [active]);
+
+  useEffect(() => {
+    if (!currentLoaded || active === null || images.length < 2) return;
+    const neighbours = [
+      (active + 1) % images.length,
+      (active - 1 + images.length) % images.length,
+    ];
+    const preloads = neighbours.map((i) => {
+      const img = new Image();
+      img.src = images[i].full;
+      return img;
+    });
+    return () => preloads.forEach((img) => (img.src = ""));
+  }, [currentLoaded, active, images]);
 
   const close = useCallback(() => setActive(null), []);
   const next = useCallback(
@@ -377,8 +409,15 @@ const Gallery = () => {
                 >
                   <img
                     src={img.thumb}
+                    srcSet={img.thumbSrcSet}
+                    /* mirrors grid-cols-2 / sm:3 / lg:4, capped at the
+                       max-w-screen-xl container so wide screens don't ask for
+                       25vw of 1920px */
+                    sizes="(min-width: 1280px) 320px, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
                     alt={img.name}
-                    loading="lazy"
+                    loading={i < 6 ? "eager" : "lazy"}
+                    fetchpriority={i < 3 ? "high" : "auto"}
+                    decoding="async"
                     referrerPolicy="no-referrer"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
@@ -458,6 +497,8 @@ const Gallery = () => {
               key={images[active].id}
               src={images[active].full}
               alt={images[active].name}
+              onLoad={() => setCurrentLoaded(true)}
+              decoding="async"
               referrerPolicy="no-referrer"
               initial={{ scale: 0.96, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
