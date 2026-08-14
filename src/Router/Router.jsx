@@ -8,6 +8,7 @@ import AddEvent from "../components/pages/Admin/AddEvent";
 import UpdateEvent from "../components/pages/Admin/UpdateEvent";
 import Events from "../components/pages/events/events";
 import Gallery from "../components/pages/Gallery/Gallery";
+import ManageGallery from "../components/pages/Admin/ManageGallery";
 import Community from "../components/pages/Community/Community";
 
 const router = createBrowserRouter([
@@ -43,6 +44,14 @@ const router = createBrowserRouter([
             <Gallery />
           </PrivateRoute>
         ), // ✅ In-site photo gallery (Drive-backed)
+      },
+      {
+        path: "/admin/gallery",
+        element: (
+          <PrivateRoute admin>
+            <ManageGallery />
+          </PrivateRoute>
+        ),
       },
       {
         path: "/admin/add-event",

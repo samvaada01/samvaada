@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { fetchGalleryImages } from "../../../utils/galleryImages";
 
 const ImageGridItem = ({
   className,
@@ -56,37 +57,7 @@ const ImageGridItem = ({
 
 // ------------------ GALLERY -------------------
 
-const allImages = [
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXqQs4Zd5EetbCxrHgMTRofDqJ0i5umynQVXOL",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXHy4JH5vjRBaFQcwTSbCPJr956qdtXV87pzuo",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXVuERPn3xbgfF3Xud9NIkqnLD8Cs7ZoRj62MW",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXpiuiS3mDHWJmSIVo6yeCPw4GMBNZlrX2j1hn",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXjlypC2Tqf53PeZK1VitXxaRHrQmFOYlEnBJ8",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXdmquBVrGSaoICXRWQpjwN6uUzA0MkmtL9q18",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXkAPPlcgMQMWlVLnim6GOzKNaYkdD7FU9I5p4",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXTNSFJ3e14OjmaBCx2MVWkz0DJ8FdUty5iTKw",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YX5SCG69zmoIJvrUzu49WheiK6E8YZRlxXjw3P",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXrwNpFr7tcQ4hBHw2vjdVaGJAixZYPR7ICLys",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXQPBp45kTeqEGVCSlJkn0RPaO4DIZ3Uoigtjb",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXDxcAUDsaCeAENJg2a68dyV0TbBj79sZ4pUxP",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YX2NOyWULGOWqPiAQeKCzlm3N6auvcyk9jRnfJ",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YX6a4SApuj0DkoSdYcQMtyU13wRApNWu8mv7zV",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXodGke84V78YXxtauKWrSDpPEqTfIn05dFGwg",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXrbDsmop7tcQ4hBHw2vjdVaGJAixZYPR7ICLy",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXNXGw69o4WqgS78HnKklFzZT23eviLY59QhBV",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXnLLcgLqMYu2D4ZGWOrPb3lNi6CU5otL8Aeax",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXNCLw2Wo4WqgS78HnKklFzZT23eviLY59QhBV",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXBmxhAnQTF05a4mbZRKfeqXWLDBNvVAY6zCOQ",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXDvYjhkaCeAENJg2a68dyV0TbBj79sZ4pUxPI",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXxKkKACWhJ9u60kHDRj1QYznP4UE8rpBaMFZc",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXzU83UBdAFXUCg7zkcR93G0K6LEPobx8jrTWB",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXR9udItJcao70yfUQYEdnHecXxiNhtvJq98Tg",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXWfpr8tRztkMe560bRSpAmUQKYVO21ysdDB3G",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXhQsuUC9oQq6zePMuTy4JwrtXRVL2ghZ7kBCj",
-  "https://gbbpj64dws.ufs.sh/f/o9wD7Q4V78YXU50PdlVgXKoVSryFCeO6Yns9JcuGNv4wpiHq",
-];
-
-const MeetTheTeam = () => {
+const Collage = ({ allImages }) => {
 
   const numSlots = 7;
   const TICK_MS = 3000;
@@ -130,7 +101,7 @@ const MeetTheTeam = () => {
     );
     Promise.all(promises).then(() => !canceled && setPreloaded(true));
     return () => (canceled = true);
-  }, []);
+  }, [allImages]);
 
   useEffect(() => {
     if (!preloaded) return;
@@ -151,19 +122,12 @@ const MeetTheTeam = () => {
       });
     }, TICK_MS);
     return () => clearInterval(interval);
-  }, [preloaded]);
+  }, [preloaded, allImages]);
 
   const visible = visibleIndices.map((i) => allImages[i % allImages.length]);
 
   return (
-    <div className="w-full max-w-screen-2xl mx-auto flex flex-col mt-8 mb-4 px-2 md:px-8 md:h-[80vh]">
-      <div className="flex flex-col items-center gap-2.5 mb-6 py-2">
-        <span className="cam-label !text-[0.7rem] text-brand-glow/90">Through Our Lens</span>
-        <h3 className="font-display text-3xl sm:text-4xl md:text-[2.75rem] font-bold ink-gradient">
-          Photo Gallery
-        </h3>
-      </div>
-
+    <>
       {!preloaded && (
         <div className="text-center text-sm text-gray-400 mb-2">
           Loading images...
@@ -204,6 +168,40 @@ const MeetTheTeam = () => {
           SMC FOR A REASON
         </span>
       </div>
+    </>
+  );
+};
+
+const MeetTheTeam = () => {
+  const [images, setImages] = useState(null); // null while the list is loading
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchGalleryImages().then(({ urls, source, error }) => {
+      if (cancelled) return;
+      // a denied read still renders (fallback), so make it loud rather than silent
+      if (error) console.error("Photo Gallery: Firestore read failed", error);
+      else if (source === "fallback") {
+        console.warn("Photo Gallery: siteContent/photoGallery is empty — showing the built-in list");
+      }
+      setImages(urls);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <div className="w-full max-w-screen-2xl mx-auto flex flex-col mt-8 mb-4 px-2 md:px-8 md:h-[80vh]">
+      <div className="flex flex-col items-center gap-2.5 mb-6 py-2">
+        <span className="cam-label !text-[0.7rem] text-brand-glow/90">Through Our Lens</span>
+        <h3 className="font-display text-3xl sm:text-4xl md:text-[2.75rem] font-bold ink-gradient">
+          Photo Gallery
+        </h3>
+      </div>
+
+      {/* key: rebuilds the rotation queue and slot indices when the list changes */}
+      {images?.length > 0 && <Collage key={images.join("|")} allImages={images} />}
     </div>
   );
 };

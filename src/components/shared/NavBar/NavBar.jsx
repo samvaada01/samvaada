@@ -104,9 +104,14 @@ const NavBar = () => {
               {user ? (
                 <>
                   {isAdminEmail(user.email) && (
-                    <Link to="/admin/add-event" className="btn-cine">
-                      + Add Event
-                    </Link>
+                    <>
+                      <Link to="/admin/gallery" className="btn-cine">
+                        Photo Gallery
+                      </Link>
+                      <Link to="/admin/add-event" className="btn-cine">
+                        + Add Event
+                      </Link>
+                    </>
                   )}
                   <div className="dropdown dropdown-end">
                     <label tabIndex={0} className="cursor-pointer">
@@ -189,13 +194,22 @@ const NavBar = () => {
                 {user ? (
                   <>
                     {isAdminEmail(user.email) && (
-                      <Link
-                        to="/admin/add-event"
-                        className="btn-cine w-full justify-center mb-2"
-                        onClick={() => setMobileOpen(false)}
-                      >
-                        + Add Event
-                      </Link>
+                      <>
+                        <Link
+                          to="/admin/gallery"
+                          className="btn-cine w-full justify-center mb-2"
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          Photo Gallery
+                        </Link>
+                        <Link
+                          to="/admin/add-event"
+                          className="btn-cine w-full justify-center mb-2"
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          + Add Event
+                        </Link>
+                      </>
                     )}
                     <button
                       onClick={async () => {

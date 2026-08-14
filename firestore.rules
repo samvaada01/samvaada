@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// Deploy with:  npx firebase-tools@latest deploy --only firestore:rules
+//
+// Keeping these in the repo (rather than only in the console) means they get
+// reviewed and can be rolled back. Change the address below if the admin changes
+// — it must match VITE_ADMIN_EMAIL.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.email_verified == true
+          && request.auth.token.email.lower() == 'samvaada@nmamit.in';
+    }
+
+    // Event archive. Public read: the homepage lists events before sign-in.
+    // Writes are admin-only — `request.auth != null` would let any of the
+    // thousands of college accounts delete the archive.
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Homepage "Photo Gallery" collage — siteContent/photoGallery { urls: [...] }
+    match /siteContent/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
