@@ -26,6 +26,8 @@ import { AuthContext } from "../../AuthProvider/AuthProvider";
 import useStructuredData from "../../../utils/useStructuredData";
 import useSEO from "../../../utils/useSEO";
 
+const PAGE_SIZE = 40; // tiles rendered per batch
+
 const Gallery = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -48,6 +50,10 @@ const Gallery = () => {
   });
   const [images, setImages] = useState([]);
   const [folders, setFolders] = useState([]);
+  // 900 tiles is ~2,700 DOM nodes; grow the grid as the user reaches the end
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false); // later pages arriving
+  const sentinelRef = useRef(null);
   const [folderName, setFolderName] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -167,9 +173,17 @@ const Gallery = () => {
       setLoading(true);
       setError("");
       setActive(null); // a stale index would open the wrong photo
+      setVisibleCount(PAGE_SIZE);
+      setLoadingMore(true);
       try {
         const [listing, name] = await Promise.all([
-          fetchDriveFolder(folderId || root),
+          // a 900-photo album is 9 sequential pages; show page 1 straight away
+          fetchDriveFolder(folderId || root, (partial) => {
+            if (cancelled) return;
+            setFolders(partial.folders);
+            setImages(partial.images);
+            setLoading(false);
+          }),
           folderId ? fetchDriveFolderName(folderId) : "",
         ]);
         if (cancelled) return;
@@ -179,7 +193,10 @@ const Gallery = () => {
       } catch (e) {
         if (!cancelled) setError(e.message || "Failed to load photos.");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     })();
     return () => {
@@ -210,6 +227,21 @@ const Gallery = () => {
     });
     return () => preloads.forEach((img) => (img.src = ""));
   }, [currentLoaded, active, images]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || visibleCount >= images.length) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((c) => Math.min(c + PAGE_SIZE, images.length));
+        }
+      },
+      { rootMargin: "600px" } // grow before the user actually hits the bottom
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visibleCount, images.length]);
 
   const close = useCallback(() => setActive(null), []);
   const next = useCallback(
@@ -393,7 +425,7 @@ const Gallery = () => {
 
         {!loading && !error && images.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-10">
-            {images.map((img, i) => (
+            {images.slice(0, visibleCount).map((img, i) => (
               <motion.div
                 key={img.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -432,6 +464,18 @@ const Gallery = () => {
                 </button>
               </motion.div>
             ))}
+          </div>
+        )}
+
+        {/* grows the window before the user reaches the bottom, and doubles as
+            the "still listing" indicator while later pages are arriving */}
+        {!error && images.length > 0 && (
+          <div ref={sentinelRef} className="py-8 text-center text-xs text-ink-faint">
+            {visibleCount < images.length
+              ? `Showing ${visibleCount} of ${images.length}…`
+              : loadingMore
+                ? `${images.length} photos loaded, finding more…`
+                : `${images.length} photo${images.length === 1 ? "" : "s"}`}
           </div>
         )}
       </section>
