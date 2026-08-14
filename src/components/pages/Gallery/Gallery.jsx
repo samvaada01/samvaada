@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useContext, useRef } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
@@ -26,13 +26,22 @@ import { AuthContext } from "../../AuthProvider/AuthProvider";
 import useStructuredData from "../../../utils/useStructuredData";
 import useSEO from "../../../utils/useSEO";
 
+const PAGE_SIZE = 40; // tiles rendered per batch
+
 const Gallery = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const [searchParams, setSearchParams] = useSearchParams();
   const folderId = searchParams.get("folder"); // null = event's root Drive folder
-  const [event, setEvent] = useState(null);
+
+  // EventCard passes the event through router state, which removes a Firestore
+  // round trip from the front of the waterfall. PrivateRoute also uses state
+  // (for the post-login path, a string), so check the shape before trusting it.
+  const { state } = useLocation();
+  const handedOver =
+    state && typeof state === "object" && state.id === id ? state : null;
+  const [event, setEvent] = useState(handedOver);
 
   useSEO({
     title: `${event?.eventName || "Gallery"} | Samvaada NMAMIT`,
@@ -41,6 +50,10 @@ const Gallery = () => {
   });
   const [images, setImages] = useState([]);
   const [folders, setFolders] = useState([]);
+  // 900 tiles is ~2,700 DOM nodes; grow the grid as the user reaches the end
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false); // later pages arriving
+  const sentinelRef = useRef(null);
   const [folderName, setFolderName] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -123,8 +136,9 @@ const Gallery = () => {
     [images, event]
   );
 
-  // 1. the event document
+  // 1. the event document — only when it wasn't handed to us (deep link, refresh)
   useEffect(() => {
+    if (handedOver) return;
     let cancelled = false;
     (async () => {
       try {
@@ -142,7 +156,7 @@ const Gallery = () => {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, handedOver]);
 
   // 2. the Drive listing for whichever folder we're in
   useEffect(() => {
@@ -159,9 +173,17 @@ const Gallery = () => {
       setLoading(true);
       setError("");
       setActive(null); // a stale index would open the wrong photo
+      setVisibleCount(PAGE_SIZE);
+      setLoadingMore(true);
       try {
         const [listing, name] = await Promise.all([
-          fetchDriveFolder(folderId || root),
+          // a 900-photo album is 9 sequential pages; show page 1 straight away
+          fetchDriveFolder(folderId || root, (partial) => {
+            if (cancelled) return;
+            setFolders(partial.folders);
+            setImages(partial.images);
+            setLoading(false);
+          }),
           folderId ? fetchDriveFolderName(folderId) : "",
         ]);
         if (cancelled) return;
@@ -171,13 +193,55 @@ const Gallery = () => {
       } catch (e) {
         if (!cancelled) setError(e.message || "Failed to load photos.");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [event, folderId]);
+
+  // Prefetch the next/previous full image so arrows and swipes feel instant.
+  // Gated on the current image finishing: firing these immediately would put
+  // two ~170KB fetches in front of the photo the user is actually waiting for,
+  // and fast swiping would queue fetches for images already skipped past.
+  const [currentLoaded, setCurrentLoaded] = useState(false);
+
+  useEffect(() => {
+    setCurrentLoaded(false);
+  }, [active]);
+
+  useEffect(() => {
+    if (!currentLoaded || active === null || images.length < 2) return;
+    const neighbours = [
+      (active + 1) % images.length,
+      (active - 1 + images.length) % images.length,
+    ];
+    const preloads = neighbours.map((i) => {
+      const img = new Image();
+      img.src = images[i].full;
+      return img;
+    });
+    return () => preloads.forEach((img) => (img.src = ""));
+  }, [currentLoaded, active, images]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || visibleCount >= images.length) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((c) => Math.min(c + PAGE_SIZE, images.length));
+        }
+      },
+      { rootMargin: "600px" } // grow before the user actually hits the bottom
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visibleCount, images.length]);
 
   const close = useCallback(() => setActive(null), []);
   const next = useCallback(
@@ -361,7 +425,7 @@ const Gallery = () => {
 
         {!loading && !error && images.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-10">
-            {images.map((img, i) => (
+            {images.slice(0, visibleCount).map((img, i) => (
               <motion.div
                 key={img.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -377,8 +441,15 @@ const Gallery = () => {
                 >
                   <img
                     src={img.thumb}
+                    srcSet={img.thumbSrcSet}
+                    /* mirrors grid-cols-2 / sm:3 / lg:4, capped at the
+                       max-w-screen-xl container so wide screens don't ask for
+                       25vw of 1920px */
+                    sizes="(min-width: 1280px) 320px, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
                     alt={img.name}
-                    loading="lazy"
+                    loading={i < 6 ? "eager" : "lazy"}
+                    fetchpriority={i < 3 ? "high" : "auto"}
+                    decoding="async"
                     referrerPolicy="no-referrer"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
@@ -393,6 +464,18 @@ const Gallery = () => {
                 </button>
               </motion.div>
             ))}
+          </div>
+        )}
+
+        {/* grows the window before the user reaches the bottom, and doubles as
+            the "still listing" indicator while later pages are arriving */}
+        {!error && images.length > 0 && (
+          <div ref={sentinelRef} className="py-8 text-center text-xs text-ink-faint">
+            {visibleCount < images.length
+              ? `Showing ${visibleCount} of ${images.length}…`
+              : loadingMore
+                ? `${images.length} photos loaded, finding more…`
+                : `${images.length} photo${images.length === 1 ? "" : "s"}`}
           </div>
         )}
       </section>
@@ -458,6 +541,8 @@ const Gallery = () => {
               key={images[active].id}
               src={images[active].full}
               alt={images[active].name}
+              onLoad={() => setCurrentLoaded(true)}
+              decoding="async"
               referrerPolicy="no-referrer"
               initial={{ scale: 0.96, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
