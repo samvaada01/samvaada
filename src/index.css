@@ -140,4 +140,85 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /* ---- Hero darkroom dust (replaces the WebGL sparkle canvas) ---- */
+  .dust-mote {
+    position: absolute;
+    border-radius: 9999px;
+    background: #86aecb;
+    box-shadow: 0 0 4px 1px rgb(134 174 203 / 0.35);
+    will-change: transform;
+    animation-name: dust-drift;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+  }
+
+  @keyframes dust-drift {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(var(--dx, 0), var(--dy, 0), 0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dust-mote {
+      animation: none;
+    }
+  }
+}
+
+/* Outside @layer utilities on purpose: Tailwind tree-shakes that layer by
+   scanning source files, and these class names only ever exist at runtime. */
+/* ---- Toasts: react-toastify themed to the site palette ----
+   Scoped to .Toastify, not :root. ReactToastify.css is imported after
+   index.css and defines these on :root too, so a :root block here loses on
+   source order — but custom properties resolve from the nearest ancestor,
+   and .Toastify is one. The doubled class beats its own rule specificity. */
+.Toastify {
+  --toastify-color-dark: #0b1116;
+  --toastify-text-color-dark: #c4d4e1;
+  --toastify-color-success: #86aecb;
+  --toastify-color-error: #e08585;
+  --toastify-color-progress-success: #86aecb;
+  --toastify-color-progress-error: #e08585;
+  /* the icon colours are separate vars and default to stock red/green */
+  --toastify-icon-color-success: #86aecb;
+  --toastify-icon-color-error: #e08585;
+  --toastify-font-family: "Manrope", system-ui, sans-serif;
+  --toastify-toast-min-height: 56px;
+  --toastify-toast-width: 340px;
+}
+
+.Toastify .Toastify__toast {
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: 0.5rem;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.55);
+  font-size: 0.85rem;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.Toastify .Toastify__toast-body {
+  line-height: 1.45;
+}
+
+/* clear the fixed navbar instead of sitting under it */
+.Toastify .Toastify__toast-container--top-right {
+  top: calc(var(--nav-h) + 0.75rem);
+}
+
+/* toastify goes full-bleed under 480px, where its own rule resets top to 0 */
+@media (max-width: 480px) {
+  .Toastify .Toastify__toast-container--top-right {
+    top: var(--nav-h);
+    padding: 0 0.5rem;
+  }
+}
+
+/* the default bar is a solid slab; a hairline reads as part of the card */
+.Toastify .Toastify__progress-bar {
+  height: 2px;
+  opacity: 0.75;
 }

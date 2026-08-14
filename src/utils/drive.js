@@ -100,17 +100,25 @@ async function driveList(params) {
   return files;
 }
 
-/**
- * List the subfolders and images directly inside a public Drive folder.
- * @param {string} folderUrlOrId - a Drive link or a bare folder ID
- * @returns {Promise<{folders: Array<{id,name}>, images: Array<{id,name,thumb,full}>}>}
- */
-export async function fetchDriveFolder(folderUrlOrId) {
-  const folderId = parseDriveFolderId(folderUrlOrId);
-  if (!folderId) {
-    throw new Error("Couldn't read a Google Drive folder ID from this link.");
-  }
+// Per-page-load caches. Backing out of a subfolder re-renders the parent album,
+// which would otherwise cost another files.list every time. Storing the promise
+// (not the result) also collapses concurrent calls for the same folder into one
+// request. In memory only, so a page refresh always re-reads Drive.
+const listingCache = new Map();
+const folderNameCache = new Map();
 
+/** Cache a promise-returning loader by key. Failures are evicted so they retry. */
+function memo(cache, key, load) {
+  let pending = cache.get(key);
+  if (!pending) {
+    pending = load();
+    cache.set(key, pending);
+    pending.catch(() => cache.delete(key));
+  }
+  return pending;
+}
+
+async function loadDriveFolder(folderId) {
   const files = await driveList({
     q: `'${folderId}' in parents and trashed = false and (mimeType contains 'image/' or mimeType = '${FOLDER_MIME}')`,
     fields: "nextPageToken, files(id, name, mimeType)",
@@ -125,11 +133,28 @@ export async function fetchDriveFolder(folderUrlOrId) {
   };
 }
 
+/**
+ * List the subfolders and images directly inside a public Drive folder.
+ * @param {string} folderUrlOrId - a Drive link or a bare folder ID
+ * @returns {Promise<{folders: Array<{id,name}>, images: Array<{id,name,thumb,full}>}>}
+ */
+export function fetchDriveFolder(folderUrlOrId) {
+  const folderId = parseDriveFolderId(folderUrlOrId);
+  if (!folderId) {
+    return Promise.reject(
+      new Error("Couldn't read a Google Drive folder ID from this link.")
+    );
+  }
+  return memo(listingCache, folderId, () => loadDriveFolder(folderId));
+}
+
 /** Folder display name — used for the breadcrumb on a deep-linked subfolder. */
-export async function fetchDriveFolderName(folderId) {
-  const apiKey = import.meta.env.VITE_DRIVE_APIKEY;
-  const res = await fetch(`${DRIVE_FILES_ENDPOINT}/${folderId}?fields=name&key=${apiKey}`);
-  if (!res.ok) return "";
-  const data = await res.json().catch(() => ({}));
-  return data.name || "";
+export function fetchDriveFolderName(folderId) {
+  return memo(folderNameCache, folderId, async () => {
+    const apiKey = import.meta.env.VITE_DRIVE_APIKEY;
+    const res = await fetch(`${DRIVE_FILES_ENDPOINT}/${folderId}?fields=name&key=${apiKey}`);
+    if (!res.ok) return "";
+    const data = await res.json().catch(() => ({}));
+    return data.name || "";
+  });
 }

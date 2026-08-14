@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useContext } from "react";
+import { useEffect, useState, useCallback, useContext, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
@@ -189,6 +189,41 @@ const Gallery = () => {
     [images.length]
   );
 
+  // Touch swipe for phones and tablets — the arrow buttons stay for pointers.
+  // A ref (not state) so moving a finger doesn't re-render the lightbox.
+  const touchRef = useRef(null);
+  const swipedRef = useRef(false); // set by a swipe, consumed by the backdrop click
+  const SWIPE_MIN_PX = 50; // below this it's a tap, not a swipe
+
+  const onTouchStart = (e) => {
+    // a new gesture clears the flag, so only the synthetic click belonging to
+    // the swipe itself is swallowed — a deliberate tap afterwards still closes
+    swipedRef.current = false;
+    const t = e.changedTouches[0];
+    touchRef.current = { x: t.clientX, y: t.clientY };
+  };
+
+  const onTouchEnd = (e) => {
+    const start = touchRef.current;
+    if (!start) return;
+    touchRef.current = null;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    // ignore mostly-vertical drags so a scroll or pull-to-refresh isn't a swipe
+    if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) < Math.abs(dy)) return;
+    // browsers usually suppress the synthetic click after a drag, but don't
+    // rely on that — flag it so the backdrop's close() skips exactly one click
+    swipedRef.current = true;
+    if (dx < 0) next();
+    else prev();
+  };
+
+  const onBackdropClick = () => {
+    if (swipedRef.current) return; // cleared by the next touchstart, not here
+    close();
+  };
+
   useEffect(() => {
     if (active === null) return;
     const onKey = (e) => {
@@ -369,8 +404,10 @@ const Gallery = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm"
-            onClick={close}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm touch-pan-y"
+            onClick={onBackdropClick}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
           >
             <div className="absolute top-5 right-5 flex items-center gap-4">
               <button
