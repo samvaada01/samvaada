@@ -14,7 +14,11 @@ const Root = () => {
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 z-[55]"
         style={{
-          boxShadow: "inset 0 0 200px 40px rgba(0,0,0,0.85)",
+          // Scales with the viewport: at a fixed 200px/40px this covered 44% of
+          // a 1280px desktop but 72% of a 390px phone, washing out the content.
+          // Clamped so it stops growing on very wide monitors.
+          boxShadow:
+            "inset 0 0 clamp(60px, 15vw, 200px) clamp(12px, 3vw, 40px) rgba(0,0,0,0.85)",
         }}
       />
 
