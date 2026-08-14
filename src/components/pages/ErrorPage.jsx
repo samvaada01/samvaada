@@ -1,7 +1,17 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import useSEO from "../../utils/useSEO";
 
 const ErrorPage = () => {
+  // the SPA rewrite serves 200 for unknown URLs, so keep them out of the index
+  useEffect(() => {
+    const tag = document.createElement("meta");
+    tag.name = "robots";
+    tag.content = "noindex";
+    document.head.appendChild(tag);
+    return () => tag.remove();
+  }, []);
+
   useSEO({
     title: "Page Not Found | Samvaada NMAMIT",
     description: "The page you are looking for does not exist on Samvaada.",

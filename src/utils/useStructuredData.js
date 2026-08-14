@@ -8,18 +8,22 @@ import { useEffect } from "react";
  * @param {Object|null} data - The structured data object to inject, or null/undefined to skip.
  */
 const useStructuredData = (data) => {
+  // callers pass a fresh object literal each render, so key the effect on the
+  // serialised value rather than the reference
+  const json = data == null ? null : JSON.stringify(data);
+
   useEffect(() => {
-    if (data == null) return;
+    if (json == null) return;
 
     const script = document.createElement("script");
     script.type = "application/ld+json";
-    script.textContent = JSON.stringify(data);
+    script.textContent = json;
     document.head.appendChild(script);
 
     return () => {
       document.head.removeChild(script);
     };
-  }, [JSON.stringify(data)]);
+  }, [json]);
 };
 
 export default useStructuredData;

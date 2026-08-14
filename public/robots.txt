@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /events/
+Disallow: /login
 
 Sitemap: https://samvaada-nmamit.in/sitemap.xml

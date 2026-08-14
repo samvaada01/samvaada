@@ -12,6 +12,7 @@ import SectionHeading from "../../shared/SectionHeading";
 import useStructuredData from "../../../utils/useStructuredData";
 import EventCard from "../../shared/EventCard";
 import useSEO from "../../../utils/useSEO";
+import isAdminEmail from "../../../utils/isAdmin";
 
 const Home = () => {
   useSEO({
@@ -34,7 +35,7 @@ const Home = () => {
       "@type": "Organization",
       "name": "Samvaada - NMAMIT",
       "url": "https://samvaada-nmamit.in",
-      "logo": "https://samvaada-nmamit.in/src/assets/video/title.png",
+      "logo": "https://samvaada-nmamit.in/og-image.png",
       "description": "The official event archive and student community platform of NMAM Institute of Technology, Nitte.",
       "sameAs": [],
       "contactPoint": {
@@ -71,6 +72,9 @@ const Home = () => {
       const years = new Set();
       eventsList.forEach((event) => {
         const date = new Date(event.eventDate);
+        // one undefined/garbage date otherwise yields "NaN-NaN", which sorts
+        // first and becomes the default filter — hiding every real event
+        if (Number.isNaN(date.getTime())) return;
         const month = date.getMonth();
         const year = date.getFullYear();
         // June (5) to May (4) as academic year
@@ -114,17 +118,23 @@ const Home = () => {
   };
 
   const handleDelete = async (id) => {
+    if (!isAdmin) {
+      toast.error("Unauthorized access");
+      return;
+    }
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
+
     try {
       await deleteDoc(doc(db, "events", id));
-      setEvents(events.filter((event) => event.id !== id));
-      setFilteredEvents(filteredEvents.filter((event) => event.id !== id));
+      setEvents((prev) => prev.filter((event) => event.id !== id));
+      setFilteredEvents((prev) => prev.filter((event) => event.id !== id));
       toast.success("Event deleted successfully!");
     } catch (error) {
       toast.error("Error deleting event");
     }
   };
 
-  const isAdmin = user?.email === import.meta.env.VITE_ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user?.email);
 
   // ✅ Limit events count (6 for desktop, 3 for mobile)
   const displayedEvents = filteredEvents.slice(0, isMobile ? 3 : 6);

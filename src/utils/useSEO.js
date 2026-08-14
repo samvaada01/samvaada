@@ -4,7 +4,7 @@ const BASE_TITLE = "Samvaada | NMAMIT Event Archive & Community";
 const BASE_DESCRIPTION =
   "The official event archive and student community platform of NMAMIT. Stay updated with college events, join your branch community, and access event galleries.";
 const BASE_URL = "https://samvaada-nmamit.in";
-const BASE_OG_IMAGE = "https://samvaada-nmamit.in/src/assets/video/title.png";
+const BASE_OG_IMAGE = "https://samvaada-nmamit.in/og-image.png";
 
 /**
  * Helper: get or create a <meta> tag by attribute selector.

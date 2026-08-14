@@ -3,6 +3,7 @@ import { addDoc, collection } from "firebase/firestore";
 import { db } from "../../Firebase/firebase.config";
 import { useContext } from "react";
 import { AuthContext } from "../../AuthProvider/AuthProvider";
+import isAdminEmail from "../../../utils/isAdmin";
 
 const AddEvent = () => {
   const { user } = useContext(AuthContext);
@@ -21,7 +22,7 @@ const AddEvent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (user.email !== import.meta.env.VITE_ADMIN_EMAIL) {
+    if (!isAdminEmail(user?.email)) {
       alert("Unauthorized access");
       return;
     }
