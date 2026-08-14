@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useContext } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
@@ -11,10 +11,13 @@ import {
   FiDownload,
   FiCalendar,
   FiShare2,
+  FiFolder,
+  FiChevronRight as FiCrumb,
 } from "react-icons/fi";
 import { db } from "../../Firebase/firebase.config";
 import {
-  fetchDriveImages,
+  fetchDriveFolder,
+  fetchDriveFolderName,
   downloadDriveImage,
   slugifyEventName,
 } from "../../../utils/drive";
@@ -27,6 +30,8 @@ const Gallery = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const folderId = searchParams.get("folder"); // null = event's root Drive folder
   const [event, setEvent] = useState(null);
 
   useSEO({
@@ -35,6 +40,8 @@ const Gallery = () => {
     canonical: `https://samvaada-nmamit.in/events/${id}/gallery`,
   });
   const [images, setImages] = useState([]);
+  const [folders, setFolders] = useState([]);
+  const [folderName, setFolderName] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [active, setActive] = useState(null); // index of open image
@@ -116,31 +123,61 @@ const Gallery = () => {
     [images, event]
   );
 
+  // 1. the event document
   useEffect(() => {
     let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      setError("");
+    (async () => {
       try {
         const snap = await getDoc(doc(db, "events", id));
+        if (cancelled) return;
         if (!snap.exists()) throw new Error("Event not found.");
-        const data = { id: snap.id, ...snap.data() };
+        setEvent({ id: snap.id, ...snap.data() });
+      } catch (e) {
+        if (!cancelled) {
+          setError(e.message || "Failed to load this event.");
+          setLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // 2. the Drive listing for whichever folder we're in
+  useEffect(() => {
+    if (!event) return;
+    const root = event.eventDriveLink;
+    if (!root) {
+      setError("This event has no Drive album linked yet.");
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError("");
+      setActive(null); // a stale index would open the wrong photo
+      try {
+        const [listing, name] = await Promise.all([
+          fetchDriveFolder(folderId || root),
+          folderId ? fetchDriveFolderName(folderId) : "",
+        ]);
         if (cancelled) return;
-        setEvent(data);
-        const imgs = await fetchDriveImages(data.eventDriveLink);
-        if (cancelled) return;
-        setImages(imgs);
+        setFolders(listing.folders);
+        setImages(listing.images);
+        setFolderName(name);
       } catch (e) {
         if (!cancelled) setError(e.message || "Failed to load photos.");
       } finally {
         if (!cancelled) setLoading(false);
       }
-    };
-    load();
+    })();
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [event, folderId]);
 
   const close = useCallback(() => setActive(null), []);
   const next = useCallback(
@@ -169,7 +206,9 @@ const Gallery = () => {
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={() => {
-              if (window.history.length > 2) {
+              if (folderId) {
+                setSearchParams({}, { replace: true });
+              } else if (window.history.length > 2) {
                 navigate(-1);
               } else {
                 navigate("/events");
@@ -177,7 +216,7 @@ const Gallery = () => {
             }}
             className="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink transition-colors"
           >
-            <FiArrowLeft /> Back to events
+            <FiArrowLeft /> {folderId ? "Back to album" : "Back to events"}
           </button>
           {user && (
             <button
@@ -195,6 +234,19 @@ const Gallery = () => {
           title={event?.eventName || "Gallery"}
           align="left"
         />
+
+        {folderId && (
+          <nav className="mt-4 flex items-center gap-1.5 text-xs text-ink-faint">
+            <button
+              onClick={() => setSearchParams({}, { replace: true })}
+              className="hover:text-ink transition-colors"
+            >
+              {event?.eventName || "Album"}
+            </button>
+            <FiCrumb className="text-[0.7rem]" />
+            <span className="text-ink-dim">{folderName || "…"}</span>
+          </nav>
+        )}
 
         {/* event meta: date + description */}
         {event && (
@@ -243,9 +295,30 @@ const Gallery = () => {
           </div>
         )}
 
-        {!loading && !error && images.length === 0 && (
+        {!loading && !error && folders.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-10">
+            {folders.map((f, i) => (
+              <motion.button
+                key={f.id}
+                onClick={() => setSearchParams({ folder: f.id })}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.4, delay: (i % 8) * 0.04 }}
+                className="group flex items-center gap-3 rounded-lg bg-ground-card border border-white/[0.06] px-4 py-4 text-left hover:border-brand-glow/40 focus:outline-none focus:ring-2 focus:ring-brand-glow/60 transition-colors"
+              >
+                <FiFolder className="shrink-0 text-xl text-ink-faint group-hover:text-brand-glow transition-colors" />
+                <span className="truncate text-sm text-ink-dim group-hover:text-ink transition-colors">
+                  {f.name}
+                </span>
+              </motion.button>
+            ))}
+          </div>
+        )}
+
+        {!loading && !error && images.length === 0 && folders.length === 0 && (
           <p className="text-center text-ink-faint py-16">
-            No photos found in this album yet.
+            {folderId ? "No photos in this folder." : "No photos found in this album yet."}
           </p>
         )}
 
