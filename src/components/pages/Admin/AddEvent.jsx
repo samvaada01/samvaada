@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { addDoc, collection } from "firebase/firestore";
+import { invalidateEvents } from "../../../utils/events";
 import { db } from "../../Firebase/firebase.config";
 import { useContext } from "react";
 import { AuthContext } from "../../AuthProvider/AuthProvider";
@@ -28,6 +29,7 @@ const AddEvent = () => {
     }
     try {
       await addDoc(collection(db, "events"), eventData);
+      invalidateEvents(); // otherwise Home/Events keep serving the cached list
       alert("Event added successfully!");
       setEventData({
         eventName: "",

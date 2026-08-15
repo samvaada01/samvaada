@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { invalidateEvents } from "../../../utils/events";
 import { db } from "../../Firebase/firebase.config";
 import { AuthContext } from "../../AuthProvider/AuthProvider";
 import { toast } from "react-toastify";
@@ -50,6 +51,7 @@ const UpdateEvent = () => {
 
     try {
       await updateDoc(doc(db, "events", id), eventData);
+      invalidateEvents(); // otherwise Home/Events keep serving the cached list
       toast.success("Event updated successfully!");
       navigate("/");
     } catch (error) {
