@@ -1,33 +1,50 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaWhatsapp, FaArrowRight } from 'react-icons/fa';
+import { FaWhatsapp, FaArrowRight, FaLock } from 'react-icons/fa';
 import useSEO from '../../../utils/useSEO';
+import { fetchCommunitySettings } from '../../../utils/communitySettings';
+import Loading from '../../Loading/Loading';
 
-const whatsappLinks = {
-"Artificial Intelligence & Data Science":"https://chat.whatsapp.com/ErZ9D8zxJVD6xfPogz3OHK",
-"Artificial Intelligence & Machine Learning":"https://chat.whatsapp.com/ErZ9D8zxJVD6xfPogz3OHK",
-"Biotechnology": "https://chat.whatsapp.com/JwLGOjacCc4HLSWAnx5X0D",
-"Civil Engineering":"https://chat.whatsapp.com/JwLGOjacCc4HLSWAnx5X0D",
-"Computer & Communication Engineering":"https://chat.whatsapp.com/ErZ9D8zxJVD6xfPogz3OHK",
-"Computer Science & Engineering" : "https://chat.whatsapp.com/ErZ9D8zxJVD6xfPogz3OHK",
-"Computer Science & Engineering(Cyber Security)": "https://chat.whatsapp.com/ErZ9D8zxJVD6xfPogz3OHK",
-"Electrical & Electronics Engineering":"https://chat.whatsapp.com/JwLGOjacCc4HLSWAnx5X0D",
-"Electronics & Communication Engineering":"https://chat.whatsapp.com/JwLGOjacCc4HLSWAnx5X0D",
-"Electronics Engineering (VLSI Design & Technology)":"https://chat.whatsapp.com/JwLGOjacCc4HLSWAnx5X0D",
-"Electronics & Communication (Advanced Communication Technology)":"https://chat.whatsapp.com/JwLGOjacCc4HLSWAnx5X0D",
-"Information Science & Engineering" : "https://chat.whatsapp.com/ErZ9D8zxJVD6xfPogz3OHK",
-"Mechanical Engineering":"https://chat.whatsapp.com/JwLGOjacCc4HLSWAnx5X0D",
-"Robotics & Artificial Intelligence" : "https://chat.whatsapp.com/ErZ9D8zxJVD6xfPogz3OHK",
-};
-
+const REDIRECT_SECONDS = 7;
 
 export default function Community() {
+  const navigate = useNavigate();
   useSEO({
     title: "Join Community | Samvaada NMAMIT",
     description:
       "Join your NMAMIT branch WhatsApp community through Samvaada. Stay connected with peers and never miss any college updates.",
     canonical: "https://samvaada-nmamit.in/community",
   });
+
+  // null while the Firestore read is in flight — we must not flash the join form
+  // and then swap it for "closed"
+  const [settings, setSettings] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCommunitySettings().then((s) => {
+      if (cancelled) return;
+      if (s.error) console.error("Community settings read failed", s.error);
+      setSettings(s);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const closed = Boolean(settings) && !settings.open;
+  const [seconds, setSeconds] = useState(REDIRECT_SECONDS);
+
+  useEffect(() => {
+    if (!closed) return;
+    if (seconds <= 0) {
+      navigate("/", { replace: true });
+      return;
+    }
+    const t = setTimeout(() => setSeconds((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [closed, seconds, navigate]);
 
   const [hasJoined, setHasJoined] = useState(() => {
     return localStorage.getItem("communityJoined") === "true";
@@ -62,7 +79,36 @@ export default function Community() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md mx-auto z-10"
       >
-        {!hasJoined ? (
+        {!settings ? (
+          <Loading />
+        ) : !settings.open ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-ground-card border border-brand-800 p-6 sm:p-8 rounded-2xl shadow-card backdrop-blur-sm text-center relative overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-amber-400/70" />
+            <FaLock className="mx-auto text-3xl text-amber-400/80 mb-3" />
+            <span className="cam-label mb-2 block text-amber-300">Joining Closed</span>
+            <h1 className="text-xl sm:text-2xl font-display font-bold text-white mb-3 sm:mb-4">
+              NMAMIT Community
+            </h1>
+            <p className="text-sm sm:text-base text-ink-dim leading-relaxed whitespace-pre-line">
+              {settings.closedMessage}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => navigate("/", { replace: true })}
+              className="btn-cine w-full justify-center gap-2 mt-6 sm:mt-8"
+            >
+              Back to Home
+              <span className="text-xs opacity-70 tabular-nums">
+                redirecting in {Math.max(seconds, 0)}s
+              </span>
+            </button>
+          </motion.div>
+        ) : !hasJoined ? (
           <div className="bg-ground-card border border-brand-800 p-6 sm:p-8 rounded-2xl shadow-card backdrop-blur-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-600 via-brand-glow to-brand-600 opacity-50" />
             <div className="text-center mb-6 sm:mb-8">
@@ -93,7 +139,7 @@ export default function Community() {
                   required
                 >
                   <option value="" disabled>Select your branch</option>
-                  {Object.keys(whatsappLinks).map(b => (
+                  {Object.keys(settings.links).map(b => (
                     <option key={b} value={b}>{b}</option>
                   ))}
                 </select>
@@ -123,7 +169,7 @@ export default function Community() {
             </p>
 
             <a 
-              href={whatsappLinks[branch]} 
+              href={settings.links[branch]} 
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#128C7E] text-white font-semibold px-4 py-3.5 sm:py-4 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] w-full shadow-lg shadow-[#25D366]/20 text-sm sm:text-base"

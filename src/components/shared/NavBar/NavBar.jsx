@@ -4,6 +4,12 @@ import { AuthContext } from "../../AuthProvider/AuthProvider";
 import logo from "../../../assets/video/logo.png";
 import isAdminEmail from "../../../utils/isAdmin";
 
+const ADMIN_LINKS = [
+  { to: "/admin/gallery", label: "Photo Gallery" },
+  { to: "/admin/community", label: "Community" },
+  { to: "/admin/add-event", label: "+ Add Event" },
+];
+
 const NavBar = () => {
   const { logOut, user } = useContext(AuthContext);
   const [imgError, setImgError] = useState(false);
@@ -104,14 +110,26 @@ const NavBar = () => {
               {user ? (
                 <>
                   {isAdminEmail(user.email) && (
-                    <>
-                      <Link to="/admin/gallery" className="btn-cine">
-                        Photo Gallery
-                      </Link>
-                      <Link to="/admin/add-event" className="btn-cine">
-                        + Add Event
-                      </Link>
-                    </>
+                    <div className="dropdown dropdown-end">
+                      <label tabIndex={0} className="btn-cine cursor-pointer gap-2">
+                        Control Room
+                        <span aria-hidden="true" className="text-[0.6rem] opacity-70">&#9660;</span>
+                      </label>
+                      {/* blur on click so the focus-within dropdown closes after navigating */}
+                      <ul
+                        tabIndex={0}
+                        onClick={() => document.activeElement?.blur()}
+                        className="mt-3 z-[1] p-3 shadow-card menu menu-sm dropdown-content bg-ground-card border border-white/10 rounded-md w-56 gap-2"
+                      >
+                        {ADMIN_LINKS.map(({ to, label }) => (
+                          <li key={to}>
+                            <Link to={to} className="btn-cine w-full justify-center">
+                              {label}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                   <div className="dropdown dropdown-end">
                     <label tabIndex={0} className="cursor-pointer">
@@ -194,22 +212,26 @@ const NavBar = () => {
                 {user ? (
                   <>
                     {isAdminEmail(user.email) && (
-                      <>
-                        <Link
-                          to="/admin/gallery"
-                          className="btn-cine w-full justify-center mb-2"
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          Photo Gallery
-                        </Link>
-                        <Link
-                          to="/admin/add-event"
-                          className="btn-cine w-full justify-center mb-2"
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          + Add Event
-                        </Link>
-                      </>
+                      <details className="mb-2 group">
+                        <summary className="btn-cine w-full justify-center cursor-pointer list-none">
+                          Control Room
+                          <span aria-hidden="true" className="ml-2 text-[0.6rem] opacity-70 group-open:rotate-180 inline-block transition-transform">
+                            &#9660;
+                          </span>
+                        </summary>
+                        <div className="mt-2 space-y-2 pl-2 border-l border-white/10">
+                          {ADMIN_LINKS.map(({ to, label }) => (
+                            <Link
+                              key={to}
+                              to={to}
+                              className="btn-cine w-full justify-center"
+                              onClick={() => setMobileOpen(false)}
+                            >
+                              {label}
+                            </Link>
+                          ))}
+                        </div>
+                      </details>
                     )}
                     <button
                       onClick={async () => {
