@@ -1,5 +1,5 @@
 import { useEffect, useState, useContext } from "react";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { deleteDoc, doc } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { db } from "../../Firebase/firebase.config";
 import { AuthContext } from "../../AuthProvider/AuthProvider";
@@ -10,7 +10,13 @@ import Banner from "./Banner/Banner";
 import MeetTheTeam from "./MeetTheTeam";
 import SectionHeading from "../../shared/SectionHeading";
 import useStructuredData from "../../../utils/useStructuredData";
-import EventCard from "../../shared/EventCard";
+import EventCard, { EventCardSkeleton } from "../../shared/EventCard";
+import {
+  loadEvents,
+  invalidateEvents,
+  academicYears as yearsOf,
+  eventsInYear,
+} from "../../../utils/events";
 import useSEO from "../../../utils/useSEO";
 import isAdminEmail from "../../../utils/isAdmin";
 
@@ -22,8 +28,8 @@ const Home = () => {
     canonical: "https://samvaada-nmamit.in/",
   });
 
-  const [events, setEvents] = useState([]);
-  const [filteredEvents, setFilteredEvents] = useState([]);
+  const [events, setEvents] = useState(null); // null = still loading
+  const [loadFailed, setLoadFailed] = useState(false);
   const [selectedYear, setSelectedYear] = useState(null);
   const [academicYears, setAcademicYears] = useState([]);
   const { user } = useContext(AuthContext);
@@ -60,62 +66,22 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      const querySnapshot = await getDocs(collection(db, "events"));
-      const eventsList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setEvents(eventsList);
-
-      // Extract unique academic years
-      const years = new Set();
-      eventsList.forEach((event) => {
-        const date = new Date(event.eventDate);
-        // one undefined/garbage date otherwise yields "NaN-NaN", which sorts
-        // first and becomes the default filter — hiding every real event
-        if (Number.isNaN(date.getTime())) return;
-        const month = date.getMonth();
-        const year = date.getFullYear();
-        // June (5) to May (4) as academic year
-        const academicYear =
-          month >= 5 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
-        years.add(academicYear);
+    // already in flight since main.jsx — this just picks up the result
+    loadEvents()
+      .then((list) => {
+        const years = yearsOf(list);
+        setAcademicYears(years);
+        setSelectedYear(years[0] || null);
+        setEvents(list);
+      })
+      .catch(() => {
+        setEvents([]);
+        setLoadFailed(true);
       });
-      const sortedYears = Array.from(years).sort().reverse();
-      setAcademicYears(sortedYears);
-
-      // Set default year to most recent
-      const mostRecentYear = sortedYears[0] || null;
-      setSelectedYear(mostRecentYear);
-      if (mostRecentYear) filterEventsByYear(mostRecentYear, eventsList);
-    };
-    fetchEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filterEventsByYear = (academicYear, eventList = events) => {
-    if (!academicYear) {
-      setFilteredEvents([]);
-      setSelectedYear(null);
-      return;
-    }
-
-    const [startYear] = academicYear.split("-");
-    const startDate = new Date(`${startYear}-06-01`);
-    const endDate = new Date(`${parseInt(startYear) + 1}-05-31`);
-
-    const filtered = eventList.filter((event) => {
-      const eventDate = new Date(event.eventDate);
-      return eventDate >= startDate && eventDate <= endDate;
-    });
-
-    const sortedFiltered = filtered.sort(
-      (a, b) => new Date(b.eventDate) - new Date(a.eventDate)
-    );
-    setFilteredEvents(sortedFiltered);
-    setSelectedYear(academicYear);
-  };
+  // derived, not stored: no second render pass before the cards appear
+  const filteredEvents = events ? eventsInYear(events, selectedYear) : [];
 
   const handleDelete = async (id) => {
     if (!isAdmin) {
@@ -126,8 +92,8 @@ const Home = () => {
 
     try {
       await deleteDoc(doc(db, "events", id));
+      invalidateEvents();
       setEvents((prev) => prev.filter((event) => event.id !== id));
-      setFilteredEvents((prev) => prev.filter((event) => event.id !== id));
       toast.success("Event deleted successfully!");
     } catch (error) {
       toast.error("Error deleting event");
@@ -155,7 +121,7 @@ const Home = () => {
           {academicYears.map((year) => (
             <button
               key={year}
-              onClick={() => filterEventsByYear(year)}
+              onClick={() => setSelectedYear(year)}
               className={`text-sm font-medium px-4 py-1.5 rounded-full border transition-all duration-300 ${
                 selectedYear === year
                   ? "border-brand-glow/50 bg-brand-700/40 text-ink"
@@ -168,15 +134,21 @@ const Home = () => {
         </div>
 
         {/* Events Grid */}
-        {displayedEvents.length > 0 ? (
+        {!events ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: isMobile ? 3 : 6 }).map((_, i) => (
+              <EventCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : displayedEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayedEvents.map((event, i) => (
               <motion.div
                 key={event.id}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.6, delay: (i % 3) * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.35, delay: (i % 3) * 0.05, ease: [0.22, 1, 0.36, 1] }}
               >
                 <EventCard
                   event={event}
@@ -190,7 +162,9 @@ const Home = () => {
           </div>
         ) : (
           <p className="text-center text-ink-faint py-16">
-            No events found for {selectedYear || "this year"}.
+            {loadFailed
+              ? "Couldn't load events. Please check your connection and refresh."
+              : `No events found for ${selectedYear || "this year"}.`}
           </p>
         )}
 

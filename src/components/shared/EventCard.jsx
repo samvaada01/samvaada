@@ -140,4 +140,9 @@ const EventCard = ({ event, user, isAdmin = false, onDelete }) => {
   );
 };
 
+/** Placeholder that holds the grid's shape while the archive loads. */
+export const EventCardSkeleton = () => (
+  <div className="h-[17rem] rounded-xl border border-white/[0.07] bg-ground-card animate-pulse" />
+);
+
 export default EventCard;
